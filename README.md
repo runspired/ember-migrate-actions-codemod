@@ -16,7 +16,7 @@ This is the safest of the codemods.
 
 ```sh
 npx ember-template-recast app/ -t \
-  https://raw.githubusercontent.com/lennyburdette/ember-action-codemods/master/src/action-modifiers.js
+  https://raw.githubusercontent.com/runspired/ember-action-codemods/master/src/action-modifiers.js
 ```
 
 ### Step 3: Convert `onclick={{action foo}}` to `{{on "click" foo}}`
@@ -29,7 +29,7 @@ for a comprehensive rundown.
 
 ```sh
 npx ember-template-recast app/ -t \
-  https://raw.githubusercontent.com/lennyburdette/ember-action-codemods/master/src/event-properties.js
+  https://raw.githubusercontent.com/runspired/ember-action-codemods/master/src/event-properties.js
 ```
 
 ### Step 4: Convert `action` hashes in JavaScript to decorated properties:
@@ -42,7 +42,7 @@ using the `@action` decorator).
 
 ```sh
 npx jscodeshift app/ -t \
-  https://raw.githubusercontent.com/lennyburdette/ember-action-codemods/master/src/action-decorators.js
+  https://raw.githubusercontent.com/runspired/ember-action-codemods/master/src/action-decorators.js
 ```
 
 ### Step 5: Convert string actions to properties
@@ -52,37 +52,39 @@ safe to do.
 
 ```sh
 npx ember-template-recast app/ -t \
-  https://raw.githubusercontent.com/lennyburdette/ember-action-codemods/master/src/string-actions.js
+  https://raw.githubusercontent.com/runspired/ember-action-codemods/master/src/string-actions.js
 ```
 
 ## What does it do?
 
 Check out the tests!
 
-* [action-modifiers.js](src/__tests__/action-modifiers.js)
+- [action-modifiers.js](src/__tests__/action-modifiers.js)
 
   `<button {{action foo}}>` → `<button {{on "click" (prevent-default foo)}}>`
 
-* [event-properties.js](src/__tests__/event-properties.js)
+- [event-properties.js](src/__tests__/event-properties.js)
 
   `<button onclick={{action foo}}>` → `<button {{on "click" (prevent-default foo)}}>`
 
-* [action-decorators.js](src/__testfixtures__/action-decorators/)
+- [action-decorators.js](src/__testfixtures__/action-decorators/)
 
   ```js
   actions: {
     foo() {}
   }
   ```
+
   →
+
   ```js
-  foo: action(function() {})
+  foo: action(function () {});
   ```
 
-* [string-actions.js](src/__tests__/string-actions.js)
+- [string-actions.js](src/__tests__/string-actions.js)
 
   `<button {{on "click" (action "foo")}}>` → `<button {{on "click" this.foo}}>`
 
 ## TODO:
 
-* Remove uses of the `(action)` helper once there's a canonical way to handle `value=`, `target=`, and `allowedKeys=`.
+- Remove uses of the `(action)` helper once there's a canonical way to handle `value=`, `target=`, and `allowedKeys=`.
