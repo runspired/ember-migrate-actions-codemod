@@ -8,6 +8,7 @@ Run
 
 ```sh
 volta install ember-template-recast
+volta install jscodeshift
 ```
 
 You may also want:
@@ -23,7 +24,7 @@ yarn add ember-on-modifier ember-fn-helper-polyfill
 This is the safest of the codemods.
 
 ```sh
-npx ember-template-recast app/ -t \
+ember-template-recast app/ -t \
   https://raw.githubusercontent.com/runspired/ember-action-codemods/master/src/action-modifiers.js
 ```
 
@@ -36,7 +37,7 @@ See https://developer.squareup.com/blog/deep-dive-on-ember-events/
 for a comprehensive rundown.
 
 ```sh
-npx ember-template-recast app/ -t \
+ember-template-recast app/ -t \
   https://raw.githubusercontent.com/runspired/ember-action-codemods/master/src/event-properties.js
 ```
 
@@ -49,7 +50,7 @@ If you're converting to native classes, this is unnecessary (you're already
 using the `@action` decorator).
 
 ```sh
-npx jscodeshift app/ -t \
+jscodeshift app/ -t \
   https://raw.githubusercontent.com/runspired/ember-action-codemods/master/src/action-decorators.js
 ```
 
@@ -59,7 +60,7 @@ If you're not using the `actions` hash in components and controllers, this is
 safe to do.
 
 ```sh
-npx ember-template-recast app/ -t \
+ember-template-recast app/ -t \
   https://raw.githubusercontent.com/runspired/ember-action-codemods/master/src/string-actions.js
 ```
 
