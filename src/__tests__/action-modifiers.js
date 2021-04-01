@@ -19,9 +19,14 @@ function codeshift(input, plugin) {
 
 const TESTS = [
   [
-    'string action name',
+    'string action name interactive',
     `<button {{action "foo" bar}}>button</button>`,
     `<button {{on "click" (prevent-default (fn (action "foo") bar))}}>button</button>`
+  ],
+  [
+    'string action name on non-interactive',
+    `<span {{action "foo" bar}}>text</span>`,
+    `<span {{on "click" (fn (action "foo") bar)}}>text</span>`
   ],
   [
     'on= option',

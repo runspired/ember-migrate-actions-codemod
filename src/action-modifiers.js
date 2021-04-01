@@ -1,3 +1,116 @@
+const COMPLEX_VALUE_STATEMENT = `value-${Date.now()}`;
+
+function getAttr(node, attrName) {
+  for (let attr of node.attributes) {
+    if (attr.name === attrName) {
+      return attr.value.chars || COMPLEX_VALUE_STATEMENT;
+    }
+  }
+}
+
+function isInteractiveNode(node) {
+  switch (node.tag) {
+    case 'a':
+    case 'input':
+    case 'textarea':
+    case 'label':
+    case 'select':
+    case 'optgroup':
+    case 'option':
+      return true;
+    case 'button':
+      let type = getAttr(node, 'type');
+      if (type !== 'button') {
+        return true;
+      }
+      return false;
+    default:
+      return false;
+  }
+}
+
+function processModifierNode(b, parentNode, node) {
+  const { path } = node;
+  const unsupportedOptions = hasUnsupportedOptions(node);
+  if (unsupportedOptions.length) {
+    unsupportedOptions.forEach(msg => {
+      console.log(`[${path}] ${msg}`);
+    });
+    return node;
+  }
+
+  if (node.path.original !== 'action') {
+    return node;
+  }
+
+  const newNode = b.mustache('on');
+  const isInteractive = isInteractiveNode(parentNode);
+
+  let [action, ...curriedArgs] = node.params;
+  let wrappedInAction = false;
+
+  // {{action "foo"}} -> {{on "click" (action "foo")}}
+  if (action.type === 'StringLiteral') {
+    action = b.sexpr('action', [action]);
+    wrappedInAction = true;
+  }
+
+  // {{action foo value="target.value"}} -> {{on "click" (action foo value="target.value")}}
+  const value = getValue(node.hash);
+  if (value) {
+    if (!wrappedInAction) {
+      action = b.sexpr('action', [action]);
+    }
+    action.hash.pairs.push(value);
+  }
+
+  // {{action foo target=service}} -> {{on "click" (action foo target=service)}}
+  const target = getTarget(node.hash);
+  if (target) {
+    if (!wrappedInAction) {
+      action = b.sexpr('action', [action]);
+    }
+    action.hash.pairs.push(target);
+  }
+
+  // {{action foo allowedKeys="alt"}} -> {{on "click" (action foo allowedKeys="alt")}}
+  const allowedKeys = getAllowedKeys(node.hash);
+  if (allowedKeys) {
+    if (!wrappedInAction) {
+      action = b.sexpr('action', [action]);
+    }
+    action.hash.pairs.push(allowedKeys);
+  }
+
+  if (argIsClosureAction(action)) {
+    action = convertExpression(action, b);
+  }
+
+  // {{action foo bar}} -> {{on "click"  (fn foo bar)}}
+  if (curriedArgs.length) {
+    action = b.sexpr('fn', [action, ...curriedArgs])
+  }
+
+  // {{action foo}} -> {{on "click" (prevent-default foo)}}
+  // {{action foo preventDefault=false}} -> {{on "click" foo}}
+  if (isInteractive && preventDefaultTrue(node.hash)) {
+    action = b.sexpr('prevent-default', [action]);
+  }
+
+  // {{action foo bubbles=false}} -> {{on "click" (stop-propagation foo)}}
+  if (bubblesFalse(node.hash)) {
+    action = b.sexpr('stop-propagation', [action]);
+  }
+
+  newNode.params = [
+    // ... on="keyup" -> {{on "keyup" ...}}
+    b.string(eventName(node.hash)),
+    action
+  ];
+
+  return newNode;
+}
+
 module.exports = function({ source, path }, { parse, visit }) {
   const ast = parse(source);
 
@@ -5,84 +118,12 @@ module.exports = function({ source, path }, { parse, visit }) {
     let { builders: b } = env.syntax;
 
     return {
-      ElementModifierStatement(node) {
-        const unsupportedOptions = hasUnsupportedOptions(node);
-        if (unsupportedOptions.length) {
-          unsupportedOptions.forEach(msg => {
-            console.log(`[${path}] ${msg}`);
-          });
-          return node;
+      ElementNode(elementNode) {
+        for (let i = 0; i < elementNode.modifiers.length; i++) {
+          let node = elementNode.modifiers[i];
+          elementNode.modifiers[i] = processModifierNode(b, elementNode, node);
         }
-
-        if (node.path.original !== 'action') {
-          return node;
-        }
-
-        const newNode = b.mustache('on');
-
-        let [action, ...curriedArgs] = node.params;
-        let wrappedInAction = false;
-
-        // {{action "foo"}} -> {{on "click" (action "foo")}}
-        if (action.type === 'StringLiteral') {
-          action = b.sexpr('action', [action]);
-          wrappedInAction = true;
-        }
-
-        // {{action foo value="target.value"}} -> {{on "click" (action foo value="target.value")}}
-        const value = getValue(node.hash);
-        if (value) {
-          if (!wrappedInAction) {
-            action = b.sexpr('action', [action]);
-          }
-          action.hash.pairs.push(value);
-        }
-
-        // {{action foo target=service}} -> {{on "click" (action foo target=service)}}
-        const target = getTarget(node.hash);
-        if (target) {
-          if (!wrappedInAction) {
-            action = b.sexpr('action', [action]);
-          }
-          action.hash.pairs.push(target);
-        }
-
-        // {{action foo allowedKeys="alt"}} -> {{on "click" (action foo allowedKeys="alt")}}
-        const allowedKeys = getAllowedKeys(node.hash);
-        if (allowedKeys) {
-          if (!wrappedInAction) {
-            action = b.sexpr('action', [action]);
-          }
-          action.hash.pairs.push(allowedKeys);
-        }
-
-        if (argIsClosureAction(action)) {
-          action = convertExpression(action, b);
-        }
-
-        // {{action foo bar}} -> {{on "click"  (fn foo bar)}}
-        if (curriedArgs.length) {
-          action = b.sexpr('fn', [action, ...curriedArgs])
-        }
-
-        // {{action foo}} -> {{on "click" (prevent-default foo)}}
-        // {{action foo preventDefault=false}} -> {{on "click" foo}}
-        if (preventDefaultTrue(node.hash)) {
-          action = b.sexpr('prevent-default', [action]);
-        }
-
-        // {{action foo bubbles=false}} -> {{on "click" (stop-propagation foo)}}
-        if (bubblesFalse(node.hash)) {
-          action = b.sexpr('stop-propagation', [action]);
-        }
-
-        newNode.params = [
-          // ... on="keyup" -> {{on "keyup" ...}}
-          b.string(eventName(node.hash)),
-          action
-        ];
-
-        return newNode;
+        return elementNode;
       }
     };
   });
