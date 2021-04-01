@@ -1,6 +1,7 @@
 module.exports = function transformer(file, api) {
   const j = api.jscodeshift;
   const ast = j(file.source);
+  console.log(file);
 
   let needsDecorator = false;
 
