@@ -4,6 +4,14 @@
 
 ### Step 1: Install dependencies
 
+Run
+
+```sh
+volta install ember-template-recast
+```
+
+You may also want:
+
 ```sh
 yarn add ember-event-helpers
 # if you're on ember-source 3.9 or below
