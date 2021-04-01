@@ -20,7 +20,7 @@ function isInteractiveNode(node) {
       return true;
     case 'button':
       let type = getAttr(node, 'type');
-      if (type !== 'button') {
+      if (type !== 'button' && type !== undefined) {
         return true;
       }
       return false;
