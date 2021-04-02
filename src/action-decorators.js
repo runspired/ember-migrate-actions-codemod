@@ -6,7 +6,7 @@ const PROXYABLE_ROUTE_METHODS = new Set([
   'transitionTo',
   'refresh',
 ]);
-const ROUTE_METHODS = new Set([  
+const ROUTE_METHODS = new Set([
   // methods
   '_internalReset',
   '_setRouteName',
@@ -70,7 +70,7 @@ const ROUTE_METHODS = new Set([
   'trigger',
   'willDestroy',
 ]);
-const ROUTE_PROPS = new Set([ 
+const ROUTE_PROPS = new Set([
   // properties
   '_activeQPChanged',
   '_names',
@@ -89,7 +89,7 @@ const ROUTE_PROPS = new Set([
   'store',
   'templateName',
 ]);
-const ROUTE_EVENTS = new Set([ 
+const ROUTE_EVENTS = new Set([
   // events
   'activate',
   'deactivate',
@@ -254,14 +254,6 @@ const CONTROLLER_PROPS = new Set([
   'target',
 ]);
 
-function nodeIsSendAction(node) {
-  return node.property.name === "sendAction" && node.object.type === 'ThisExpression';
-}
-
-function nodeIsSend(node) {
-  return node.property.name === "send" && node.object.type === 'ThisExpression'
-}
-
 module.exports = function transformer(file, api) {
   const filePath = file.path.replace(process.cwd(), '');
   const j = api.jscodeshift;
@@ -286,11 +278,12 @@ module.exports = function transformer(file, api) {
   });
 
   if (classType === 'component') {
-    ast.find(j.MemberExpression)
-    .forEach(path => {
-      if (nodeIsSendAction(path.node)) {
-        
+    ast.find(j.CallExpression)
+    .replaceWith(path => {
+      if (nodeIsSendAction(path.node.callee)) {
+        return replaceWithInvocation(j, path, classType);
       }
+      return path.node;
     });
   } else {
 
@@ -318,9 +311,47 @@ module.exports = function transformer(file, api) {
     }
   }
 
-  return ast.toSource();
+  const newSourceCode = ast.toSource();
+  console.log(newSourceCode);
+  return newSourceCode;
 };
 
+function thisExp(j, propName) {
+  return j.memberExpression(j.thisExpression(), j.identifier(propName));
+}
+
+function replaceWithInvocation(j, path, classType) {
+  if (classType === 'component') {
+    const args = path.node.arguments;
+
+    if (args.length === 0) {
+      return;
+    }
+
+    const [methodArg, ...callArgs] = args;
+
+    if (!isLiteral(methodArg)) {
+      console.log('unable to replace sendAction invocation, first arg is not a string');
+      return path.node;
+    }
+
+    let methodName = methodArg.value;
+    let block = j.blockStatement([
+      j.expressionStatement(
+        j.callExpression(
+          thisExp(j, methodName),
+          callArgs
+        )
+      )
+    ]);
+    let newNode = j.ifStatement(
+      thisExp(j, methodName),
+      block,
+    );
+
+    return newNode;
+  }
+}
 
 function _checkPathForType(filePath, type) {
   let ext = path.extname(filePath);
@@ -346,19 +377,23 @@ function getClassTypeFromFilePath(filePath) {
 function processActionsHash(j, path, actionProp, filePath, classType) {
   const remainingProps = path.node.properties.filter(p => !isActionsHash(p));
   const { propsToMove, propsToRename, propsToDelete, propsToUpgrade, propsWithConflicts } = createNewProps(
+    j,
     actionProp.value.properties,
     remainingProps,
     classType,
   );
-  const needsDecorator = Boolean(propsToMove.length) || Boolean(propsToUpgrade.length);
+  const needsDecorator = Boolean(propsToRename) || Boolean(propsToMove.length) || Boolean(propsToUpgrade.length);
   const newProps = [];
-  
+
   propsToMove.forEach(prop => {
     let newProp = j.property(
       'init',
       j.identifier(prop.key.name),
       j.callExpression(j.identifier('action'), [prop.value])
     );
+    newProp.leadingComments = prop.leadingComments;
+    newProp.trailingComments = prop.trailingComments;
+    newProp.comments = prop.comments;
     newProps.push(newProp);
   });
   propsToRename.forEach(prop => {
@@ -369,16 +404,24 @@ function processActionsHash(j, path, actionProp, filePath, classType) {
     );
     newProps.push(newProp);
   });
+
   propsToUpgrade.forEach(prop => {
     let newProp = j.property(
       'init',
       j.identifier(prop.key.name),
       j.callExpression(j.identifier('action'), [prop.value])
     );
-    newProps.push(newProp);
+    let index = remainingProps.findIndex(p => p === prop);
+    newProp.leadingComments = prop.leadingComments;
+    newProp.trailingComments = prop.trailingComments;
+    newProp.comments = prop.comments;
+    remainingProps[index] = newProp;
   });
 
   propsToDelete.forEach(prop => {
+    if (remainingProps.find(p => p.key.name === prop.key.name)) {
+      return;
+    }
     let newProp = j.property(
       'init',
       j.identifier(prop.key.name),
@@ -417,7 +460,146 @@ function isActionsHash(prop) {
   );
 }
 
-function createNewProps(props, topLevelProps, classType) {
+function nodeIsSendAction(node) {
+  return isThisMethod(node, 'sendAction');
+}
+
+function nodeIsSend(node) {
+  return isThisMethod(node, 'send');
+}
+
+function isThisMethod(node, name) {
+  return node.type === 'MemberExpression' && node.property.name === name && node.object.type === 'ThisExpression'
+}
+
+function isEmptyAction(prop) {
+  return prop.value.body.body.length === 0;
+}
+
+function isPassThruAction(j, prop, classType) {
+  let method = prop.value;
+  let args = method.params;
+  let body = method.body.body;
+
+  if (body.length !== 1) {
+    return false;
+  }
+  /*
+    detects
+    ```
+    {
+      foo(a) {}
+      action: {
+        foo(a) { this.sendAction('foo', a); }
+      }
+    }
+    ```
+  */
+  let expr = body[0];
+  if (expr.type !== 'ReturnStatement' && expr.type !== 'ExpressionStatement') {
+    return false;
+  }
+
+  if (expr.type === 'ReturnStatement') {
+    expr = expr.argument;
+  } else {
+    expr = expr.expression;
+  }
+
+  if (expr.type !== 'CallExpression') {
+    return false;
+  }
+
+  if (classType === 'component' && !nodeIsSendAction(expr.callee)) {
+    return false;
+  }
+
+  if (classType !== 'component' && !nodeIsSend(expr.callee)) {
+    return false;
+  }
+
+  let callArgs = expr.arguments;
+  return argsDoMatch([j.literal(prop.key.name), ...args], callArgs);
+}
+
+function isLiteral(arg) {
+  return arg.type.includes('Literal');
+}
+
+function isIdentifier(arg) {
+  return arg.type === 'Identifier';
+}
+
+function argsDoMatch(args1, args2) {
+  if (args1.length !== args2.length) {
+    return false;
+  }
+  for (let i = 0; i < args1.length; i++) {
+    let a = args1[i];
+    let b = args2[i];
+
+    if (a.type !== b.type) {
+      return false;
+    }
+
+    if (isLiteral(a)) {
+      if (a.value !== b.value) {
+        return false;
+      }
+    } else if (isIdentifier(a)) {
+      if (a.name !== b.name) {
+        return false;
+      }
+    } else {
+      return false;
+    }
+  }
+  return true;
+}
+
+function isProxyAction(prop) {
+  let method = prop.value;
+  let args = method.params;
+  let body = method.body.body;
+
+  if (body.length !== 1) {
+    return false;
+  }
+  /*
+    detects
+    ```
+    {
+      foo(a) {}
+      action: {
+        foo(a) { this.foo(a); }
+      }
+    }
+    ```
+  */
+  let expr = body[0];
+  if (expr.type !== 'ReturnStatement' && expr.type !== 'ExpressionStatement') {
+    return false;
+  }
+
+  if (expr.type === 'ReturnStatement') {
+    expr = expr.argument;
+  } else {
+    expr = expr.expression;
+  }
+
+  if (expr.type !== 'CallExpression') {
+    return false;
+  }
+
+  if (!isThisMethod(expr.callee, prop.key.name)) {
+    return false;
+  }
+
+  let callArgs = expr.arguments;
+  return argsDoMatch(args, callArgs);
+}
+
+function createNewProps(j, props, topLevelProps, classType) {
   const existingNames = {};
   topLevelProps.forEach(p => {
     existingNames[p.key.name] = p;
@@ -491,7 +673,7 @@ function createNewProps(props, topLevelProps, classType) {
   }
   */
   const propsToDelete = [];
-  
+
   // change existing method on main definition to be an action
   // while deleting this from the action hash
   /*
@@ -521,13 +703,13 @@ function createNewProps(props, topLevelProps, classType) {
 
   switch (classType) {
     case 'component':
-      processChangesForComponent(props, topLevelProps, existingNames, changes);
+      processChangesForComponent(j, props, existingNames, changes);
       break;
     case 'route':
-      processChangesForRoute(props, topLevelProps, existingNames, changes);
+      processChangesForRoute(j, props, existingNames, changes);
       break;
     case 'controller':
-      processChangesForController(props, topLevelProps, existingNames, changes);
+      processChangesForController(j, props, existingNames, changes);
       break;
     default:
       throw new Error('unreachable');
@@ -536,7 +718,7 @@ function createNewProps(props, topLevelProps, classType) {
   return changes;
 }
 
-function processChangesForComponent(props, topLevelProps, existingNames, changes) {
+function processChangesForComponent(j, props, existingNames, changes) {
   const {
     propsToMove,
     propsToRename,
@@ -549,11 +731,11 @@ function processChangesForComponent(props, topLevelProps, existingNames, changes
     let propName = prop.key.name;
 
     // handle actions that just re-call sendAction
-    if (isPassThruAction(prop)) {
+    if (isPassThruAction(j, prop, 'component') || isEmptyAction(prop)) {
       propsToDelete.push(prop);
       continue;
     }
-    
+
     if (existingNames[propName]) {
       // handle actions that just invoke the method of the same name
       if (isProxyAction(prop)) {
@@ -578,7 +760,7 @@ function processChangesForComponent(props, topLevelProps, existingNames, changes
 
       continue;
     }
-  
+
     // handle actions that have the same name as a component property
     if (COMPONENT_PROPS.has(propName)) {
       propsToRename.push(prop);
@@ -591,10 +773,6 @@ function processChangesForComponent(props, topLevelProps, existingNames, changes
   }
 
 }
-
-function isPassThruAction(prop) {}
-
-function isProxyAction(prop) {}
 
 function processChangesForRoute(props, topLevelProps, existingNames, changes) {
 

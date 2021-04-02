@@ -1,41 +1,51 @@
 import Component from "@ember/component";
 
+import { action } from "@ember/object";
+
 export default Component.extend({
-    actionA: null,
-    // actionB: null,
-    actionB: null,
+  actionA: null,
 
-    actionC: action(function(f) { console.log("in method c"); }),
+  // actionB: null,
 
-    actionD: action(function() { console.log("in action d"); }),
+  actionC: action(function(f) { console.log("in method c"); }),
 
-    actionF: action(function() {
-        if (this.actionA) {
-            this.actionA(1, 2, 3);
-        }
-    }),
+  actionE() { console.log("in method e"); },
 
-    method1() {
-        if (this.actionA) {
-            this.actionA(2);
-        }
-    },
-  
-    method2(b, c) {
-        this.a = b;
-        if (this.actionC) {
-            this.actionC(b + c);
-        }
-        this.a = c;
-    },
+  method1() {
+    if (this.actionA) {
+      this.actionA(2);
+    };
+  },
 
-    setAction: action(function(a, b) {
-      this.a = b;
-    }),
+  method2(b, c) {
+    this.a = b;
+    if (this.actionC) {
+      this.actionC(b + c);
+    };
+    this[a] = c;
+  },
 
-    actions: {
-        actionE() {
-            console.log("in action e");
-        }
+  // this action will move
+  actionD: action(function() {
+    console.log("in action d");
+  }),
+
+  actionF: action(function() {
+    if (this.actionA) {
+      this.actionA(1, 2, 3);
+    };
+  }),
+
+  setAction: action(function(a, b) {
+    this.a = b;
+  }),
+
+  actionB: null,
+  actionG: null,
+
+  actions: {
+    actionE() {
+      console.log("in action e");
     }
+  }
 });
