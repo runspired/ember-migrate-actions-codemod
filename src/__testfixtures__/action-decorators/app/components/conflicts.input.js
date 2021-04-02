@@ -1,13 +1,13 @@
-import Component from '@ember/component';
+import Component from "@ember/component";
 
 export default Component.extends({
   foo: 42,
   actions: {
     foo() {
-      console.log('something');
+      console.log("something");
     },
     bar() {
-      console.log('bar');
+      console.log("bar");
     }
   }
 });

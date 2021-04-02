@@ -1,9 +1,9 @@
-import Component from '@ember/component';
+import Component from "@ember/component";
 
 export default Component.extends({
   actions: {
     didInsertElement() {
-      console.log('something');
+      console.log("something");
     }
   }
 });

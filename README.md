@@ -2,7 +2,7 @@
 
 ## Usage
 
-### Step 1: Install dependencies
+### Install dependencies
 
 Run
 
@@ -19,7 +19,7 @@ yarn add ember-event-helpers
 yarn add ember-on-modifier ember-fn-helper-polyfill
 ```
 
-### Step 2: Convert `{{action}}` modifiers to `{{on}}` modifiers
+### Step 1: Convert `{{action}}` modifiers to `{{on}}` modifiers
 
 This is the safest of the codemods.
 
@@ -28,7 +28,7 @@ ember-template-recast app/ -t \
   https://raw.githubusercontent.com/runspired/ember-action-codemods/master/src/action-modifiers.js
 ```
 
-### Step 3: Convert `onclick={{action foo}}` to `{{on "click" foo}}`
+### Step 2: Convert `onclick={{action foo}}` to `{{on "click" foo}}`
 
 Switching from event properties to Ember modifiers can have subtle behavior
 changes regarding event ordering!
@@ -41,20 +41,17 @@ ember-template-recast app/ -t \
   https://raw.githubusercontent.com/runspired/ember-action-codemods/master/src/event-properties.js
 ```
 
-### Step 4: Convert `action` hashes in JavaScript to decorated properties:
+### Step 3: Convert `action` hashes in JavaScript to decorated properties:
 
 Requires Ember.js 3.10 and above. This will no-op if your action names
-conflict with existing ember component functions.
-
-If you're converting to native classes, this is unnecessary (you're already
-using the `@action` decorator).
+conflict with existing methods or props on the component/route/controller.
 
 ```sh
 jscodeshift app/ -t \
   https://raw.githubusercontent.com/runspired/ember-action-codemods/master/src/action-decorators.js
 ```
 
-### Step 5: Convert string actions to properties
+### Step 4: Convert string actions to properties
 
 If you're not using the `actions` hash in components and controllers, this is
 safe to do.

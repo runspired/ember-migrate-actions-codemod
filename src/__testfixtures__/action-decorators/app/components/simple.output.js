@@ -1,5 +1,5 @@
-import Component from '@ember/component';
-import { action, computed } from '@ember/object';
+import Component from "@ember/component";
+import { action, computed } from "@ember/object";
 
 export default Component.extends({
   bar: computed(function() {
@@ -7,7 +7,7 @@ export default Component.extends({
   }),
 
   foo: action(function() {
-    console.log('something');
+    console.log("something");
   }),
 
   baz: action(function(e) {
