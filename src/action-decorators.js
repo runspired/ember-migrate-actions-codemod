@@ -400,8 +400,6 @@ function replaceWithInvocation(j, path, classType, allProps, meta) {
       }
 
     } else {
-      // replace all sendAction with method calls and a guard
-
       // determine if we have an own method to invoke
       let matchedProp = allProps.find(p => {
         if (p.key.name === methodName && p.kind === 'init' && p.value && p.value.callee && p.value.callee.name === 'action') {
@@ -414,6 +412,7 @@ function replaceWithInvocation(j, path, classType, allProps, meta) {
         meta.usedActions[orgMethodName] = methodName;
       }
 
+      // replace all sendAction with method calls and a guard
       let block = j.blockStatement([
         j.expressionStatement(
           j.callExpression(

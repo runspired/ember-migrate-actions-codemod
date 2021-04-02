@@ -1,0 +1,45 @@
+{
+  "name": "test-app",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Small description for test-app goes here",
+  "repository": "",
+  "license": "MIT",
+  "author": "",
+  "directories": {
+    "doc": "doc",
+    "test": "tests"
+  },
+  "scripts": {
+    "build": "ember build --environment=production",
+    "start": "ember serve",
+    "test": "ember test"
+  },
+  "devDependencies": {
+    "@ember/optional-features": "^2.0.0",
+    "@ember/test-helpers": "^2.2.0",
+    "@glimmer/component": "^1.0.3",
+    "@glimmer/tracking": "^1.0.3",
+    "broccoli-asset-rev": "^3.0.0",
+    "ember-cli": "~3.25.2",
+    "ember-cli-app-version": "^4.0.0",
+    "ember-cli-babel": "^7.23.1",
+    "ember-cli-dependency-checker": "^3.2.0",
+    "ember-cli-htmlbars": "^5.3.2",
+    "ember-cli-inject-live-reload": "^2.0.2",
+    "ember-load-initializers": "^2.1.2",
+    "ember-maybe-import-regenerator": "^0.1.6",
+    "ember-qunit": "^5.1.2",
+    "ember-resolver": "^8.0.2",
+    "ember-source": "~3.25.1",
+    "loader.js": "^4.7.0",
+    "qunit": "^2.14.0",
+    "qunit-dom": "^1.6.0"
+  },
+  "engines": {
+    "node": "10.* || >= 12"
+  },
+  "ember": {
+    "edition": "octane"
+  }
+}

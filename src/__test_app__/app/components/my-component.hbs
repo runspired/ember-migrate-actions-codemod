@@ -1,0 +1,8 @@
+{{nested-component refresh="refresh"}}
+<NestedGlimmerComponent @select={{refreshAll}} @refresh={{selectAll}} />
+<button {{action refreshAll}}>
+  1
+</button>
+<button {{action "refresh"}}>
+  2
+</button>
