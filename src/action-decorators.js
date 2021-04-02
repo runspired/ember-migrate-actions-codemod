@@ -1,5 +1,6 @@
 const IS_EMBER_ACTION_CODEMODS_TEST = process.env.IS_EMBER_ACTION_CODEMODS_TEST;
 const path = require('path');
+const fs = require('fs');
 const chalk = require('chalk');
 
 const ROUTE_METHODS = new Set([
@@ -250,6 +251,19 @@ const CONTROLLER_PROPS = new Set([
   'target',
 ]);
 
+function updateMetaCache(meta) {
+  let filePath = path.join(process.cwd(), './actions-migration-meta.json');
+  try {
+    fs.lstatSync(filePath);
+  } catch (e) {
+    fs.writeFileSync(filePath, JSON.stringify({}, null, 2));
+  }
+  let fileStr = fs.readFileSync(filePath, 'utf-8');
+  let jsonMeta = JSON.parse(fileStr);
+  jsonMeta[meta.filePath] = meta;
+  fs.writeFileSync(filePath, JSON.stringify(jsonMeta, null, 2));
+}
+
 function isPotentialNameConflict(name) {
   return CONTROLLER_PROPS.has(name) ||
     CONTROLLER_METHODS.has(name) ||
@@ -265,12 +279,18 @@ module.exports = function transformer(file, api) {
   const j = api.jscodeshift;
   const ast = j(file.source);
   const classType = getClassTypeFromFilePath(filePath);
+  const meta = {};
   let needsDecorator = false;
   let allProps;
 
   if (!classType) {
     return;
   }
+
+  meta.filePath = filePath;
+  meta.classType = classType;
+  meta.usedActions = {};
+  meta.declaredActions = {};
 
   // move props off the `actions` hash onto the parent, and wrap the value
   // of each prop with the `action` decorator.
@@ -280,7 +300,7 @@ module.exports = function transformer(file, api) {
       return;
     }
 
-    let result = processActionsHash(j, path, actionProp, filePath, classType);
+    let result = processActionsHash(j, path, actionProp, filePath, classType, meta);
     needsDecorator = result.needsDecorator;
     allProps = result.allProps;
   });
@@ -289,9 +309,9 @@ module.exports = function transformer(file, api) {
   ast.find(j.CallExpression)
     .replaceWith(path => {
       if (classType === 'component' && nodeIsSendAction(path.node.callee)) {
-        return replaceWithInvocation(j, path, classType);
+        return replaceWithInvocation(j, path, classType, allProps, meta);
       } else if (classType !== 'component' && nodeIsSend(path.node.callee)) {
-        return replaceWithInvocation(j, path, classType, allProps);
+        return replaceWithInvocation(j, path, classType, allProps, meta);
       }
       return path.node;
     });
@@ -318,8 +338,9 @@ module.exports = function transformer(file, api) {
     }
   }
 
+  updateMetaCache(meta);
+
   const newSourceCode = ast.toSource();
-  console.log(newSourceCode);
   return newSourceCode;
 };
 
@@ -327,7 +348,7 @@ function thisExp(j, propName) {
   return j.memberExpression(j.thisExpression(), j.identifier(propName));
 }
 
-function replaceWithInvocation(j, path, classType, allProps) {
+function replaceWithInvocation(j, path, classType, allProps, meta) {
   const args = path.node.arguments;
 
     if (args.length === 0) {
@@ -342,6 +363,7 @@ function replaceWithInvocation(j, path, classType, allProps) {
     }
 
     let methodName = methodArg.value;
+    let orgMethodName = methodName;
 
     // we amend anything that could be confused for
     // a route/controller/component property or method
@@ -369,14 +391,29 @@ function replaceWithInvocation(j, path, classType, allProps) {
         return newNode;
       } else {
         // update send if necessary
-        if (methodName !== methodArg.value) {
+        if (methodName !== orgMethodName) {
           methodArg.value = methodName;
         }
+        meta.usedActions[methodName] = methodName;
+        meta.usedActions[orgMethodName] = methodName;
         return path.node;
       }
 
     } else {
       // replace all sendAction with method calls and a guard
+
+      // determine if we have an own method to invoke
+      let matchedProp = allProps.find(p => {
+        if (p.key.name === methodName && p.kind === 'init' && p.value && p.value.callee && p.value.callee.name === 'action') {
+          return true;
+        }
+        return false;
+      });
+      if (!matchedProp) {
+        meta.usedActions[methodName] = methodName;
+        meta.usedActions[orgMethodName] = methodName;
+      }
+
       let block = j.blockStatement([
         j.expressionStatement(
           j.callExpression(
@@ -419,7 +456,7 @@ function getClassTypeFromFilePath(filePath) {
   }
 }
 
-function processActionsHash(j, path, actionProp, filePath, classType) {
+function processActionsHash(j, path, actionProp, filePath, classType, meta) {
   const remainingProps = path.node.properties.filter(p => !isActionsHash(p));
   const { propsToMove, propsToRename, propsToDelete, propsToUpgrade, propsWithConflicts } = createNewProps(
     j,
@@ -431,9 +468,11 @@ function processActionsHash(j, path, actionProp, filePath, classType) {
   const newProps = [];
 
   propsToMove.forEach(prop => {
+    let name = prop.key.name;
+    meta.declaredActions[name] = name;
     let newProp = j.property(
       'init',
-      j.identifier(prop.key.name),
+      j.identifier(name),
       j.callExpression(j.identifier('action'), [prop.value])
     );
     newProp.leadingComments = prop.leadingComments;
@@ -442,9 +481,14 @@ function processActionsHash(j, path, actionProp, filePath, classType) {
     newProps.push(newProp);
   });
   propsToRename.forEach(prop => {
+    let name = prop.key.name;
+    let newName = `${name}Action`;
+    meta.declaredActions[name] = newName;
+    meta.declaredActions[newName] = newName;
+
     let newProp = j.property(
       'init',
-      j.identifier(`${prop.key.name}Action`),
+      j.identifier(newName),
       j.callExpression(j.identifier('action'), [prop.value])
     );
     newProp.leadingComments = prop.leadingComments;
@@ -454,9 +498,11 @@ function processActionsHash(j, path, actionProp, filePath, classType) {
   });
 
   propsToUpgrade.forEach(prop => {
+    let name = prop.key.name;
+    meta.declaredActions[name] = name;
     let newProp = j.property(
       'init',
-      j.identifier(prop.key.name),
+      j.identifier(name),
       j.callExpression(j.identifier('action'), [prop.value])
     );
     let index = remainingProps.findIndex(p => p === prop);
@@ -467,21 +513,27 @@ function processActionsHash(j, path, actionProp, filePath, classType) {
   });
 
   propsToDelete.forEach(prop => {
-    if (remainingProps.find(p => p.key.name === prop.key.name)) {
+    let name = prop.key.name;
+    if (remainingProps.find(p => p.key.name === name)) {
       return;
     }
     if (isEmptyAction(prop)) {
       return;
     }
+    meta.usedActions[name] = name;
     let newProp = j.property(
       'init',
-      j.identifier(prop.key.name),
+      j.identifier(name),
       j.nullLiteral()
     );
     newProps.push(newProp);
   });
 
   if (propsWithConflicts.length) {
+    propsWithConflicts.forEach(prop => {
+      let name = prop.key.name;
+      meta.declaredActions[name] = name;
+    });
     console.log(
       chalk.grey(`⚠️ [${chalk.white(filePath)}] Could not convert ${
         chalk.white(propsWithConflicts.length)
