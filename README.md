@@ -43,8 +43,23 @@ ember-template-recast app/ -t \
 
 ### Step 3: Convert `action` hashes in JavaScript to decorated properties:
 
-Requires Ember.js 3.10 and above. This will no-op if your action names
-conflict with existing methods or props on the component/route/controller.
+Requires Ember.js 3.10 and above. This will
+
+- eliminate redundant actions
+- eliminate usage of `sendAction`
+- replace usages of `send` that can be direct invocation
+- ⚠️ rename action usage where names conflict with framework methods/props on component/route/controller\*
+- no-op for name conflicts with other methods/properties on the class.
+
+After running this be sure to find any remaining actions hash usages and
+remove them! Hopefully this will leave only a small handful of cases unmigrated.
+
+\*Step 4 will rename action usage in templates where names conflict with framework methods/props on component/route/controller to keep these in sync; however, some instances of
+string action passing may not be detectable and therefore may not be migrated. Most
+commonly this will occur when passing an action as a string argument `{{my-component someAction="myActionName"}}`.
+
+This step produces a meta file which step-4 consumes which must be kept checked in
+after running until step-4 is completed.
 
 ```sh
 jscodeshift app/ -t \
@@ -53,8 +68,16 @@ jscodeshift app/ -t \
 
 ### Step 4: Convert string actions to properties
 
-If you're not using the `actions` hash in components and controllers, this is
-safe to do.
+This will change all string action usage into method action usage. On it's own this is
+safe to do once there is no longer any usage of the `actions: {}` hash on controllers
+or components.
+
+Additionally this will attempt to rename action usages to avoid conflicts with built-ins,
+including by detecting most instances of actions being passed as args as strings such as
+`{{my-component someAction="myActionName"}}`. This is accomplished by building a map in
+step 3 of what actions each component and controller provides, and building a map in step 4
+of which are used. Common places where this might fail include yielding out strings from
+a component to use as actions.
 
 ```sh
 ember-template-recast app/ -t \
@@ -93,4 +116,4 @@ Check out the tests!
 
 ## TODO:
 
-- Remove uses of the `(action)` helper once there's a canonical way to handle `value=`, `target=`, and `allowedKeys=`.
+- Remove uses of the `(action)` helper that remain due to use of `value=`, `target=`, and `allowedKeys=`.
