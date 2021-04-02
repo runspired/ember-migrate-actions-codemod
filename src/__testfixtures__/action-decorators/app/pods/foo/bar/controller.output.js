@@ -1,8 +1,8 @@
-import Component from "@ember/component";
+import Controller from "@ember/controller";
 
 import { action } from "@ember/object";
 
-export default Component.extend({
+export default Controller.extend({
   actionA: null,
 
   // actionB: null,
@@ -12,38 +12,23 @@ export default Component.extend({
   actionE() { console.log("in method e"); },
 
   method1() {
-    if (this.actionA) {
-      this.actionA(2);
-    };
-    if (this.didInsertElementAction) {
-      this.didInsertElementAction(this);
-    };
+    this.send("refreshAction", this);
   },
 
-  method2(b, c) {
-    this.a = b;
-    if (this.actionC) {
-      this.actionC(b + c);
-    };
-    this[a] = c;
-  },
+  actionB: action(function(f) {
+    this.send("actionA", f);
+  }),
 
   // this action will move
   actionD: action(function() {
+    // this will be converted
+    this.actionC(1, 2, 3);
     console.log("in action d");
-  }),
-
-  actionF: action(function() {
-    if (this.actionA) {
-      this.actionA(1, 2, 3);
-    };
   }),
 
   setAction: action(function(a, b) {
     this.a = b;
   }),
-
-  actionB: null,
 
   actions: {
     actionE() {

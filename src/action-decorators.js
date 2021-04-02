@@ -2,10 +2,6 @@ const IS_EMBER_ACTION_CODEMODS_TEST = process.env.IS_EMBER_ACTION_CODEMODS_TEST;
 const path = require('path');
 const chalk = require('chalk');
 
-const PROXYABLE_ROUTE_METHODS = new Set([
-  'transitionTo',
-  'refresh',
-]);
 const ROUTE_METHODS = new Set([
   // methods
   '_internalReset',
@@ -254,12 +250,23 @@ const CONTROLLER_PROPS = new Set([
   'target',
 ]);
 
+function isPotentialNameConflict(name) {
+  return CONTROLLER_PROPS.has(name) ||
+    CONTROLLER_METHODS.has(name) ||
+    COMPONENT_PROPS.has(name) ||
+    COMPONENT_METHODS.has(name) ||
+    COMPONENT_EVENTS.has(name) ||
+    ROUTE_PROPS.has(name) ||
+    ROUTE_METHODS.has(name);
+}
+
 module.exports = function transformer(file, api) {
   const filePath = file.path.replace(process.cwd(), '');
   const j = api.jscodeshift;
   const ast = j(file.source);
   const classType = getClassTypeFromFilePath(filePath);
   let needsDecorator = false;
+  let allProps;
 
   if (!classType) {
     return;
@@ -275,19 +282,19 @@ module.exports = function transformer(file, api) {
 
     let result = processActionsHash(j, path, actionProp, filePath, classType);
     needsDecorator = result.needsDecorator;
+    allProps = result.allProps;
   });
 
-  if (classType === 'component') {
-    ast.find(j.CallExpression)
+  // update this.send and this.sendAction calls
+  ast.find(j.CallExpression)
     .replaceWith(path => {
-      if (nodeIsSendAction(path.node.callee)) {
+      if (classType === 'component' && nodeIsSendAction(path.node.callee)) {
         return replaceWithInvocation(j, path, classType);
+      } else if (classType !== 'component' && nodeIsSend(path.node.callee)) {
+        return replaceWithInvocation(j, path, classType, allProps);
       }
       return path.node;
     });
-  } else {
-
-  }
 
   // add `import { action } from '@ember/object';`
   if (needsDecorator) {
@@ -320,9 +327,8 @@ function thisExp(j, propName) {
   return j.memberExpression(j.thisExpression(), j.identifier(propName));
 }
 
-function replaceWithInvocation(j, path, classType) {
-  if (classType === 'component') {
-    const args = path.node.arguments;
+function replaceWithInvocation(j, path, classType, allProps) {
+  const args = path.node.arguments;
 
     if (args.length === 0) {
       return;
@@ -331,26 +337,65 @@ function replaceWithInvocation(j, path, classType) {
     const [methodArg, ...callArgs] = args;
 
     if (!isLiteral(methodArg)) {
-      console.log('unable to replace sendAction invocation, first arg is not a string');
+      console.log(`unable to replace ${path.node.callee.property.name} invocation, first arg is not a string`);
       return path.node;
     }
 
     let methodName = methodArg.value;
-    let block = j.blockStatement([
-      j.expressionStatement(
-        j.callExpression(
+
+    // we amend anything that could be confused for
+    // a route/controller/component property or method
+    if (isPotentialNameConflict(methodName)) {
+      methodName = `${methodName}Action`;
+    }
+
+    if (classType !== 'component') {
+      // determine if we have an own method to invoke
+      let matchedProp = allProps.find(p => {
+        if (p.key.name === methodName && p.kind === 'init' && p.value && p.value.callee && p.value.callee.name === 'action') {
+          return true;
+        }
+        return false;
+      });
+      if (matchedProp) {
+        // replace send with method call
+        let newNode = j.callExpression(
           thisExp(j, methodName),
           callArgs
-        )
-      )
-    ]);
-    let newNode = j.ifStatement(
-      thisExp(j, methodName),
-      block,
-    );
+        );
+        newNode.leadingComments = path.node.leadingComments;
+        newNode.trailingComments = path.node.trailingComments;
+        newNode.comments = path.node.comments;
+        return newNode;
+      } else {
+        // update send if necessary
+        if (methodName !== methodArg.value) {
+          methodArg.value = methodName;
+        }
+        return path.node;
+      }
 
-    return newNode;
-  }
+    } else {
+      // replace all sendAction with method calls and a guard
+      let block = j.blockStatement([
+        j.expressionStatement(
+          j.callExpression(
+            thisExp(j, methodName),
+            callArgs
+          )
+        )
+      ]);
+      let newNode = j.ifStatement(
+        thisExp(j, methodName),
+        block,
+      );
+      newNode.leadingComments = path.node.leadingComments;
+      newNode.trailingComments = path.node.trailingComments;
+      newNode.comments = path.node.comments;
+
+      return newNode;
+    }
+
 }
 
 function _checkPathForType(filePath, type) {
@@ -402,6 +447,9 @@ function processActionsHash(j, path, actionProp, filePath, classType) {
       j.identifier(`${prop.key.name}Action`),
       j.callExpression(j.identifier('action'), [prop.value])
     );
+    newProp.leadingComments = prop.leadingComments;
+    newProp.trailingComments = prop.trailingComments;
+    newProp.comments = prop.comments;
     newProps.push(newProp);
   });
 
@@ -420,6 +468,9 @@ function processActionsHash(j, path, actionProp, filePath, classType) {
 
   propsToDelete.forEach(prop => {
     if (remainingProps.find(p => p.key.name === prop.key.name)) {
+      return;
+    }
+    if (isEmptyAction(prop)) {
       return;
     }
     let newProp = j.property(
@@ -448,9 +499,10 @@ function processActionsHash(j, path, actionProp, filePath, classType) {
     );
   }
 
-  path.node.properties = [...remainingProps, ...newProps];
+  const allProps = [...remainingProps, ...newProps];
+  path.node.properties = allProps;
 
-  return { needsDecorator };
+  return { needsDecorator, allProps };
 }
 
 function isActionsHash(prop) {
@@ -747,22 +799,8 @@ function processChangesForComponent(j, props, existingNames, changes) {
       continue;
     }
 
-    // handle actions that have the same name as a JS event
-    if (COMPONENT_EVENTS.has(propName)) {
-      propsToRename.push(prop);
-
-      continue;
-    }
-
-    // handle actions that have the same name as a component method
-    if (COMPONENT_METHODS.has(propName)) {
-      propsToRename.push(prop);
-
-      continue;
-    }
-
-    // handle actions that have the same name as a component property
-    if (COMPONENT_PROPS.has(propName)) {
+    // handle actions that have the same name as a built in method/prop/event
+    if (isPotentialNameConflict(propName)) {
       propsToRename.push(prop);
 
       continue;
@@ -771,13 +809,86 @@ function processChangesForComponent(j, props, existingNames, changes) {
     // no special casing!
     propsToMove.push(prop);
   }
-
 }
 
-function processChangesForRoute(props, topLevelProps, existingNames, changes) {
+function processChangesForRoute(j, props, existingNames, changes) {
+  const {
+    propsToMove,
+    propsToRename,
+    propsToDelete,
+    propsToUpgrade,
+    propsWithConflicts,
+  } = changes;
 
+  for (let prop of props) {
+    let propName = prop.key.name;
+
+    // handle actions that just re-call send
+    if (isPassThruAction(j, prop, 'controller') || isEmptyAction(prop)) {
+      propsToDelete.push(prop);
+      continue;
+    }
+
+    if (existingNames[propName]) {
+      // handle actions that just invoke the method of the same name
+      if (isProxyAction(prop)) {
+        propsToUpgrade.push(existingNames[propName])
+      } else {
+        propsWithConflicts.push(prop);
+      }
+
+      continue;
+    }
+
+    // handle actions that have the same name as a built in method/prop/event
+    if (isPotentialNameConflict(propName)) {
+      propsToRename.push(prop);
+
+      continue;
+    }
+
+    // no special casing!
+    propsToMove.push(prop);
+  }
 }
 
-function processChangesForController(props, topLevelProps, existingNames, changes) {
+function processChangesForController(j, props, existingNames, changes) {
+  const {
+    propsToMove,
+    propsToRename,
+    propsToDelete,
+    propsToUpgrade,
+    propsWithConflicts,
+  } = changes;
 
+  for (let prop of props) {
+    let propName = prop.key.name;
+
+    // handle actions that just re-call send
+    if (isPassThruAction(j, prop, 'controller') || isEmptyAction(prop)) {
+      propsToDelete.push(prop);
+      continue;
+    }
+
+    if (existingNames[propName]) {
+      // handle actions that just invoke the method of the same name
+      if (isProxyAction(prop)) {
+        propsToUpgrade.push(existingNames[propName])
+      } else {
+        propsWithConflicts.push(prop);
+      }
+
+      continue;
+    }
+
+    // handle actions that have the same name as a built in method/prop/event
+    if (isPotentialNameConflict(propName)) {
+      propsToRename.push(prop);
+
+      continue;
+    }
+
+    // no special casing!
+    propsToMove.push(prop);
+  }
 }

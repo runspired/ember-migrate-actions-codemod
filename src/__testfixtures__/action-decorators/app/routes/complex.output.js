@@ -1,8 +1,8 @@
-import Component from "@ember/component";
+import Route from "@ember/route";
 
 import { action } from "@ember/object";
 
-export default Component.extend({
+export default Route.extend({
   actionA: null,
 
   // actionB: null,
@@ -12,38 +12,35 @@ export default Component.extend({
   actionE() { console.log("in method e"); },
 
   method1() {
-    if (this.actionA) {
-      this.actionA(2);
-    };
-    if (this.didInsertElementAction) {
-      this.didInsertElementAction(this);
-    };
+    this.refreshAction(this);
   },
 
-  method2(b, c) {
-    this.a = b;
-    if (this.actionC) {
-      this.actionC(b + c);
-    };
-    this[a] = c;
-  },
+  actionB: action(function(f) {
+    this.send("actionA", f);
+  }),
 
   // this action will move
   actionD: action(function() {
+    // this will be converted
+    this.actionC(1, 2, 3);
     console.log("in action d");
   }),
 
-  actionF: action(function() {
-    if (this.actionA) {
-      this.actionA(1, 2, 3);
-    };
+  willTransition: action(function() {
+    this.a = b;
+  }),
+
+  didTransition: action(function() {
+    this.c = d;
   }),
 
   setAction: action(function(a, b) {
     this.a = b;
   }),
 
-  actionB: null,
+  refreshAction: action(function() {
+    this.refresh();
+  }),
 
   actions: {
     actionE() {

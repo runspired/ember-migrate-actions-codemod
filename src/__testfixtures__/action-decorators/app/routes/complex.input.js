@@ -1,7 +1,8 @@
-import Component from "@ember/component";
+import Route from "@ember/route";
 
-export default Component.extend({
+export default Route.extend({
   actionA: null,
+
   // actionB: null,
 
   actionC(f) { console.log("in method c"); },
@@ -9,22 +10,16 @@ export default Component.extend({
   actionE() { console.log("in method e"); },
 
   method1() {
-    this.sendAction("actionA", 2);
-    this.sendAction("didInsertElement", this);
-  },
-
-  method2(b, c) {
-    this.a = b;
-    this.sendAction("actionC", b + c);
-    this[a] = c;
+    this.send("refresh", this);
   },
 
   actions: {
     actionA() {
-      this.sendAction("actionA");
+      // circular should be deleted
+      this.send("actionA");
     },
     actionB(f) {
-      this.sendAction("actionB", f);
+      this.send("actionA", f);
     },
     actionC(f) {
       this.actionC(f);
@@ -32,20 +27,28 @@ export default Component.extend({
 
     // this action will move
     actionD() {
+      // this will be converted
+      this.send("actionC", 1, 2, 3);
       console.log("in action d");
     },
 
     actionE() {
       console.log("in action e");
     },
-    actionF() {
-      this.sendAction("actionA", 1, 2, 3);
-    },
     actionG() {
         // this action wil be deleted
     },
     set(a, b) {
       this.a = b;
-    }
+    },
+    refresh() {
+      this.refresh();
+    },
+    willTransition() {
+      this.a = b;
+    },
+    didTransition() {
+      this.c = d;
+    },
   }
 });
