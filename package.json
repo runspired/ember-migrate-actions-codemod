@@ -1,6 +1,10 @@
 {
-  "name": "ember-action-codemods",
-  "version": "1.0.0-alpha.2",
+  "name": "ember-migrate-actions-codemod",
+  "description": "jscodeshift and ember-template-recast codemods for moving to modern action syntax in both .js and .hbs files",
+  "version": "0.0.0-alpha.1",
+  "homepage": "https://github.com/runspired/ember-migrate-actions-codemod",
+  "bugs": "https://github.com/runspired/ember-migrate-actions-codemod/issues",
+  "repository": "github:runspired/ember-migrate-actions-codemod",
   "main": "index.js",
   "contributors": [
     "Chris Thoburn <runspired@gmail.com>",
@@ -14,6 +18,12 @@
     "package.json",
     "src/",
     "README.md"
+  ],
+  "keywords": [
+    "ember",
+    "codemod",
+    "ember-codemod",
+    "codemod-cli"
   ],
   "license": "MIT",
   "dependencies": {
