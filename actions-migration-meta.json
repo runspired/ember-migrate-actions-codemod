@@ -170,5 +170,177 @@
       "actionC": "actionC",
       "actionE": "actionE"
     }
+  },
+  "/tests/__testfixtures__/action-decorators/app/components/simple.input.js": {
+    "filePath": "/tests/__testfixtures__/action-decorators/app/components/simple.input.js",
+    "classType": "component",
+    "usedActions": {},
+    "declaredActions": {
+      "foo": "foo",
+      "baz": "baz"
+    }
+  },
+  "/tests/__testfixtures__/action-decorators/app/components/add-import.input.js": {
+    "filePath": "/tests/__testfixtures__/action-decorators/app/components/add-import.input.js",
+    "classType": "component",
+    "usedActions": {},
+    "declaredActions": {
+      "foo": "foo"
+    }
+  },
+  "/tests/__testfixtures__/action-decorators/app/components/conflicts.input.js": {
+    "filePath": "/tests/__testfixtures__/action-decorators/app/components/conflicts.input.js",
+    "classType": "component",
+    "usedActions": {},
+    "declaredActions": {
+      "bar": "bar",
+      "foo": "foo"
+    }
+  },
+  "/tests/__testfixtures__/action-decorators/app/components/conflicts-ember.input.js": {
+    "filePath": "/tests/__testfixtures__/action-decorators/app/components/conflicts-ember.input.js",
+    "classType": "component",
+    "usedActions": {},
+    "declaredActions": {
+      "didInsertElement": "didInsertElementAction",
+      "didInsertElementAction": "didInsertElementAction"
+    }
+  },
+  "/tests/__testfixtures__/action-decorators/app/components/multiple-imports.input.js": {
+    "filePath": "/tests/__testfixtures__/action-decorators/app/components/multiple-imports.input.js",
+    "classType": "component",
+    "usedActions": {},
+    "declaredActions": {
+      "bar": "bar"
+    }
+  },
+  "/tests/__testfixtures__/action-decorators/app/components/complex.input.js": {
+    "filePath": "/tests/__testfixtures__/action-decorators/app/components/complex.input.js",
+    "classType": "component",
+    "usedActions": {
+      "actionB": "actionB",
+      "actionA": "actionA",
+      "didInsertElementAction": "didInsertElementAction",
+      "didInsertElement": "didInsertElementAction",
+      "refreshAction": "refreshAction",
+      "refresh": "refreshAction",
+      "changeAction": "changeAction",
+      "change": "changeAction"
+    },
+    "declaredActions": {
+      "actionD": "actionD",
+      "actionF": "actionF",
+      "set": "setAction",
+      "setAction": "setAction",
+      "actionC": "actionC",
+      "actionE": "actionE"
+    }
+  },
+  "/tests/__testfixtures__/action-decorators/app/controllers/complex.input.js": {
+    "filePath": "/tests/__testfixtures__/action-decorators/app/controllers/complex.input.js",
+    "classType": "controller",
+    "usedActions": {
+      "actionA": "actionA",
+      "a": "a"
+    },
+    "declaredActions": {
+      "actionB": "actionB",
+      "actionD": "actionD",
+      "refresh": "refresh",
+      "set": "setAction",
+      "setAction": "setAction",
+      "actionC": "actionC",
+      "actionE": "actionE"
+    }
+  },
+  "/tests/__testfixtures__/action-decorators/app/controllers/complex2.input.js": {
+    "filePath": "/tests/__testfixtures__/action-decorators/app/controllers/complex2.input.js",
+    "classType": "controller",
+    "usedActions": {
+      "refreshAction": "refreshAction",
+      "refresh": "refreshAction",
+      "actionA": "actionA"
+    },
+    "declaredActions": {
+      "actionB": "actionB",
+      "actionD": "actionD",
+      "set": "setAction",
+      "setAction": "setAction",
+      "actionC": "actionC",
+      "actionE": "actionE"
+    }
+  },
+  "/tests/__testfixtures__/action-decorators/app/routes/complex.input.js": {
+    "filePath": "/tests/__testfixtures__/action-decorators/app/routes/complex.input.js",
+    "classType": "route",
+    "usedActions": {
+      "actionA": "actionA"
+    },
+    "declaredActions": {
+      "actionB": "actionB",
+      "actionD": "actionD",
+      "willTransition": "willTransition",
+      "didTransition": "didTransition",
+      "set": "setAction",
+      "setAction": "setAction",
+      "refresh": "refreshAction",
+      "refreshAction": "refreshAction",
+      "actionC": "actionC",
+      "actionE": "actionE"
+    }
+  },
+  "/tests/__testfixtures__/action-decorators/app/pods/foo/bar/component.input.js": {
+    "filePath": "/tests/__testfixtures__/action-decorators/app/pods/foo/bar/component.input.js",
+    "classType": "component",
+    "usedActions": {
+      "actionB": "actionB",
+      "actionA": "actionA",
+      "didInsertElementAction": "didInsertElementAction",
+      "didInsertElement": "didInsertElementAction"
+    },
+    "declaredActions": {
+      "actionD": "actionD",
+      "actionF": "actionF",
+      "set": "setAction",
+      "setAction": "setAction",
+      "actionC": "actionC",
+      "actionE": "actionE"
+    }
+  },
+  "/tests/__testfixtures__/action-decorators/app/pods/foo/bar/route.input.js": {
+    "filePath": "/tests/__testfixtures__/action-decorators/app/pods/foo/bar/route.input.js",
+    "classType": "route",
+    "usedActions": {
+      "actionA": "actionA"
+    },
+    "declaredActions": {
+      "actionB": "actionB",
+      "actionD": "actionD",
+      "willTransition": "willTransition",
+      "didTransition": "didTransition",
+      "set": "setAction",
+      "setAction": "setAction",
+      "refresh": "refreshAction",
+      "refreshAction": "refreshAction",
+      "actionC": "actionC",
+      "actionE": "actionE"
+    }
+  },
+  "/tests/__testfixtures__/action-decorators/app/pods/foo/bar/controller.input.js": {
+    "filePath": "/tests/__testfixtures__/action-decorators/app/pods/foo/bar/controller.input.js",
+    "classType": "controller",
+    "usedActions": {
+      "refreshAction": "refreshAction",
+      "refresh": "refreshAction",
+      "actionA": "actionA"
+    },
+    "declaredActions": {
+      "actionB": "actionB",
+      "actionD": "actionD",
+      "set": "setAction",
+      "setAction": "setAction",
+      "actionC": "actionC",
+      "actionE": "actionE"
+    }
   }
 }

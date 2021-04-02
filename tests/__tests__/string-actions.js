@@ -1,4 +1,4 @@
-const stringActions = require('../string-actions');
+const stringActions = require('../../src/string-actions');
 const { parse, transform } = require('ember-template-recast');
 
 function codeshift(input, plugin) {

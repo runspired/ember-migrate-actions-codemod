@@ -1,4 +1,4 @@
-const actionModifiers = require('../action-modifiers');
+const actionModifiers = require('../../src/action-modifiers');
 const { parse, transform } = require('ember-template-recast');
 
 function codeshift(input, plugin) {

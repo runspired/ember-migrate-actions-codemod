@@ -1,4 +1,4 @@
-const eventProperties = require('../event-properties');
+const eventProperties = require('../../src/event-properties');
 const { parse, transform } = require('ember-template-recast');
 
 function codeshift(input, plugin) {

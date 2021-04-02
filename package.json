@@ -10,6 +10,11 @@
     "type" : "patreon",
     "url" : "https://www.patreon.com/runspired"
   },
+  "files": [
+    "package.json",
+    "src/",
+    "README.md"
+  ],
   "license": "MIT",
   "dependencies": {
     "ember-template-recast": "^5.0.1",
@@ -19,6 +24,6 @@
     "jest": "^24.8.0"
   },
   "scripts": {
-    "test": "jest"
+    "test": "jest tests/__tests__ && node ./tests/run-acceptance-test.js"
   }
 }
