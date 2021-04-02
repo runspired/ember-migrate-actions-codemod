@@ -18,6 +18,12 @@ export default Component.extend({
     if (this.didInsertElementAction) {
       this.didInsertElementAction(this);
     };
+    if (this.refreshAction) {
+      this.refreshAction();
+    };
+    if (this.changeAction) {
+      this.changeAction();
+    };
   },
 
   method2(b, c) {

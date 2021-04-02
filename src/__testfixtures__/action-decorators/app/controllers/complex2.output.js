@@ -12,7 +12,7 @@ export default Controller.extend({
   actionE() { console.log("in method e"); },
 
   method1() {
-    this.refresh(this);
+    this.send("refreshAction", this);
   },
 
   actionB: action(function(f) {
@@ -24,10 +24,6 @@ export default Controller.extend({
     // this will be converted
     this.actionC(1, 2, 3);
     console.log("in action d");
-  }),
-
-  refresh: action(function() {
-    this.send('a');
   }),
 
   setAction: action(function(a, b) {

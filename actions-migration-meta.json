@@ -49,7 +49,11 @@
       "actionB": "actionB",
       "actionA": "actionA",
       "didInsertElementAction": "didInsertElementAction",
-      "didInsertElement": "didInsertElementAction"
+      "didInsertElement": "didInsertElementAction",
+      "refreshAction": "refreshAction",
+      "refresh": "refreshAction",
+      "changeAction": "changeAction",
+      "change": "changeAction"
     },
     "declaredActions": {
       "actionD": "actionD",
@@ -64,13 +68,13 @@
     "filePath": "/src/__testfixtures__/action-decorators/app/controllers/complex.input.js",
     "classType": "controller",
     "usedActions": {
-      "refreshAction": "refreshAction",
-      "refresh": "refreshAction",
-      "actionA": "actionA"
+      "actionA": "actionA",
+      "a": "a"
     },
     "declaredActions": {
       "actionB": "actionB",
       "actionD": "actionD",
+      "refresh": "refresh",
       "set": "setAction",
       "setAction": "setAction",
       "actionC": "actionC",
@@ -135,6 +139,23 @@
   },
   "/src/__testfixtures__/action-decorators/app/pods/foo/bar/controller.input.js": {
     "filePath": "/src/__testfixtures__/action-decorators/app/pods/foo/bar/controller.input.js",
+    "classType": "controller",
+    "usedActions": {
+      "refreshAction": "refreshAction",
+      "refresh": "refreshAction",
+      "actionA": "actionA"
+    },
+    "declaredActions": {
+      "actionB": "actionB",
+      "actionD": "actionD",
+      "set": "setAction",
+      "setAction": "setAction",
+      "actionC": "actionC",
+      "actionE": "actionE"
+    }
+  },
+  "/src/__testfixtures__/action-decorators/app/controllers/complex2.input.js": {
+    "filePath": "/src/__testfixtures__/action-decorators/app/controllers/complex2.input.js",
     "classType": "controller",
     "usedActions": {
       "refreshAction": "refreshAction",

@@ -264,14 +264,44 @@ function updateMetaCache(meta) {
   fs.writeFileSync(filePath, JSON.stringify(jsonMeta, null, 2));
 }
 
-function isPotentialNameConflict(name) {
-  return CONTROLLER_PROPS.has(name) ||
-    CONTROLLER_METHODS.has(name) ||
-    COMPONENT_PROPS.has(name) ||
-    COMPONENT_METHODS.has(name) ||
-    COMPONENT_EVENTS.has(name) ||
-    ROUTE_PROPS.has(name) ||
-    ROUTE_METHODS.has(name);
+function isInternallyConsistentName(name, allProps, classType) {
+  let prop = allProps.find(p => p.key.name === name);
+
+  if (prop && propIsAction(prop, name)) {
+    return true;
+  }
+  return false;
+}
+
+function isPotentialNameConflict(name, isUsage = false, classType = null) {
+  switch (classType) {
+    case 'controller':
+      if (isUsage) {
+        return CONTROLLER_PROPS.has(name) ||
+          CONTROLLER_METHODS.has(name) ||
+          ROUTE_PROPS.has(name) ||
+          ROUTE_METHODS.has(name);
+      }
+      return CONTROLLER_PROPS.has(name) ||
+        CONTROLLER_METHODS.has(name);
+    case 'component':
+      return ROUTE_PROPS.has(name) ||
+          ROUTE_METHODS.has(name) ||
+          COMPONENT_PROPS.has(name) ||
+          COMPONENT_METHODS.has(name) ||
+          COMPONENT_EVENTS.has(name)
+    case 'route':
+      return ROUTE_PROPS.has(name) ||
+        ROUTE_METHODS.has(name);
+    default:
+      return CONTROLLER_PROPS.has(name) ||
+      CONTROLLER_METHODS.has(name) ||
+      COMPONENT_PROPS.has(name) ||
+      COMPONENT_METHODS.has(name) ||
+      COMPONENT_EVENTS.has(name) ||
+      ROUTE_PROPS.has(name) ||
+      ROUTE_METHODS.has(name);
+  }
 }
 
 module.exports = function transformer(file, api) {
@@ -348,6 +378,10 @@ function thisExp(j, propName) {
   return j.memberExpression(j.thisExpression(), j.identifier(propName));
 }
 
+function propIsAction(p, propName) {
+  return p.key.name === propName && p.kind === 'init' && p.value && p.value.callee && p.value.callee.name === 'action';
+}
+
 function replaceWithInvocation(j, path, classType, allProps, meta) {
   const args = path.node.arguments;
 
@@ -367,18 +401,13 @@ function replaceWithInvocation(j, path, classType, allProps, meta) {
 
     // we amend anything that could be confused for
     // a route/controller/component property or method
-    if (isPotentialNameConflict(methodName)) {
+    if (isPotentialNameConflict(methodName, true, classType) && !isInternallyConsistentName(methodName, allProps)) {
       methodName = `${methodName}Action`;
     }
 
     if (classType !== 'component') {
       // determine if we have an own method to invoke
-      let matchedProp = allProps.find(p => {
-        if (p.key.name === methodName && p.kind === 'init' && p.value && p.value.callee && p.value.callee.name === 'action') {
-          return true;
-        }
-        return false;
-      });
+      let matchedProp = allProps.find(p => propIsAction(p, methodName));
       if (matchedProp) {
         // replace send with method call
         let newNode = j.callExpression(
@@ -851,7 +880,7 @@ function processChangesForComponent(j, props, existingNames, changes) {
     }
 
     // handle actions that have the same name as a built in method/prop/event
-    if (isPotentialNameConflict(propName)) {
+    if (isPotentialNameConflict(propName, false, 'component')) {
       propsToRename.push(prop);
 
       continue;
@@ -875,7 +904,7 @@ function processChangesForRoute(j, props, existingNames, changes) {
     let propName = prop.key.name;
 
     // handle actions that just re-call send
-    if (isPassThruAction(j, prop, 'controller') || isEmptyAction(prop)) {
+    if (isPassThruAction(j, prop, 'route') || isEmptyAction(prop)) {
       propsToDelete.push(prop);
       continue;
     }
@@ -892,7 +921,7 @@ function processChangesForRoute(j, props, existingNames, changes) {
     }
 
     // handle actions that have the same name as a built in method/prop/event
-    if (isPotentialNameConflict(propName)) {
+    if (isPotentialNameConflict(propName, false, 'route')) {
       propsToRename.push(prop);
 
       continue;
@@ -933,7 +962,7 @@ function processChangesForController(j, props, existingNames, changes) {
     }
 
     // handle actions that have the same name as a built in method/prop/event
-    if (isPotentialNameConflict(propName)) {
+    if (isPotentialNameConflict(propName, false, 'controller')) {
       propsToRename.push(prop);
 
       continue;

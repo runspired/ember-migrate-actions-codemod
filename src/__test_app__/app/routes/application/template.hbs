@@ -1,15 +1,15 @@
-{{! <MyComponent @onSelect="select" @refresh="refresh" /> }}
-{{#scoped-component refreshAll='refreshModel' selectAll='select' as |options|}}
-  <button {{action 'change' 'template/application:change'}}>
-    Change Action in Route Scope
+<MyComponent @select="select" @refresh="refresh" />
+{{#scoped-component refresh='refreshModel' select='select' as |options|}}
+  <button {{action 'change' 'template/application#change'}}>
+    template/application#change
   </button>
-  <button {{action options.refresh 'template/application:options.refresh'}}>
-    Yielded Refresh in Route Scope
+  <button {{action options.refresh 'template/application#options.refresh'}}>
+    template/application#options.refresh
   </button>
   <button
-    {{action options.refreshAll 'template/application:options.refreshAll'}}
+    {{action options.refreshAll 'template/application#options.refreshAll'}}
   >
-    Yielded RefreshAll in Route Scope
+    template/application#options.refreshAll
   </button>
 {{/scoped-component}}
 {{outlet}}

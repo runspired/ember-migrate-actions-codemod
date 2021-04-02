@@ -41,6 +41,9 @@ export default Controller.extend({
     },
     set(a, b) {
       this.a = b;
-    }
+    },
+    refresh() {
+      this.send('a');
+    },
   }
 });

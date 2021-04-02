@@ -1,2 +1,7 @@
-{{yield (hash refresh='refreshModel' selectAll=selectAll refreshAll=refreshAll)
-}}
+<button {{action 'refreshModel' 'template/scoped-component#refreshModel(str)'}}>
+  template/scoped-component#refreshModel(str)
+</button>
+<button {{action refresh 'template/scoped-component#refresh(ref)'}}>
+  template/scoped-component#refresh(ref)
+</button>
+{{yield (hash refresh='refreshModel' selectAll=selectAll refreshAll=refresh)}}

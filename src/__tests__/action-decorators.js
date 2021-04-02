@@ -9,6 +9,7 @@ defineTest(__dirname, 'action-decorators', null, 'action-decorators/app/componen
 defineTest(__dirname, 'action-decorators', null, 'action-decorators/app/components/complex');
 
 defineTest(__dirname, 'action-decorators', null, 'action-decorators/app/controllers/complex');
+defineTest(__dirname, 'action-decorators', null, 'action-decorators/app/controllers/complex2');
 defineTest(__dirname, 'action-decorators', null, 'action-decorators/app/routes/complex');
 
 defineTest(__dirname, 'action-decorators', null, 'action-decorators/app/pods/foo/bar/component');

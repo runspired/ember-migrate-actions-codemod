@@ -1,6 +1,10 @@
-<button {{action refresh}}>
-  1
+<button {{action refresh 'template/nested-component#refresh(ref)'}}>
+  template/nested-component#refresh(ref)
 </button>
-<button {{action "update"}}>
-  2
+<button {{action 'refresh' 'template/nested-component#refresh(str)'}}>
+  template/nested-component#refresh(str)
 </button>
+<button {{action 'update' 'template/nested-component#update(str)'}}>
+  template/nested-component#update(str)
+</button>
+<NestedGlimmerComponent @refresh={{action this.refresh}} />

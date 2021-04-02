@@ -1,8 +1,10 @@
-{{nested-component refresh="refresh"}}
-<NestedGlimmerComponent @select={{refreshAll}} @refresh={{selectAll}} />
-<button {{action refreshAll}}>
-  1
+{{nested-component refresh='refresh'}}
+<button {{action 'refresh' 'template/my-component#refresh(str)'}}>
+  template/my-component#refresh(str)
 </button>
-<button {{action "refresh"}}>
-  2
+<button {{action refresh 'template/my-component#refresh(ref)'}}>
+  template/my-component#refresh(ref)
+</button>
+<button {{action 'didInsertElement' 'template/my-component#didInsertElement'}}>
+  template/my-component#didInsertElement
 </button>
