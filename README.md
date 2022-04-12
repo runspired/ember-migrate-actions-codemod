@@ -25,7 +25,7 @@ This is the safest of the codemods.
 
 ```sh
 ember-template-recast app/ -t \
-  https://raw.githubusercontent.com/runspired/ember-action-codemods/master/src/action-modifiers.js
+  https://raw.githubusercontent.com/runspired/ember-migrate-actions-codemod/main/src/action-modifiers.js
 ```
 
 ### Step 2: Convert `onclick={{action foo}}` to `{{on "click" foo}}`
@@ -38,7 +38,7 @@ for a comprehensive rundown.
 
 ```sh
 ember-template-recast app/ -t \
-  https://raw.githubusercontent.com/runspired/ember-action-codemods/master/src/event-properties.js
+  https://raw.githubusercontent.com/runspired/ember-migrate-actions-codemod/main/src/event-properties.js
 ```
 
 ### Step 3: Convert `action` hashes in JavaScript to decorated properties:
@@ -63,7 +63,7 @@ after running until step-4 is completed.
 
 ```sh
 jscodeshift app/ -t \
-  https://raw.githubusercontent.com/runspired/ember-action-codemods/master/src/action-decorators.js
+  https://raw.githubusercontent.com/runspired/ember-migrate-actions-codemod/main/src/action-decorators.js
 ```
 
 ### Step 4: Convert string actions to properties
@@ -81,7 +81,7 @@ a component to use as actions.
 
 ```sh
 ember-template-recast app/ -t \
-  https://raw.githubusercontent.com/runspired/ember-action-codemods/master/src/string-actions.js
+  https://raw.githubusercontent.com/runspired/ember-migrate-actions-codemod/main/src/string-actions.js
 ```
 
 ## What does it do?
