@@ -27,6 +27,7 @@
   ],
   "license": "MIT",
   "dependencies": {
+    "chalk": "4",
     "ember-template-recast": "^5.0.1",
     "jscodeshift": "^0.11.0"
   },
@@ -35,5 +36,9 @@
   },
   "scripts": {
     "test": "jest tests/__tests__ && node ./tests/run-acceptance-test.js"
+  "volta": {
+    "node": "12.22.7",
+    "npm": "7.24.2",
+    "yarn": "1.22.18"
   }
 }
